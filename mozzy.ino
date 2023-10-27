@@ -1,113 +1,70 @@
-#include <Adafruit_BLE.h>
-#include <Adafruit_BluefruitLE_UART.h>
-#include "BluefruitConfig.h"
+#include <Adafruit_NeoPXL8.h>
 #include "LEDControl.h"
+#include "RainbowPattern.h"
 
-SoftwareSerial bluefruitSS = SoftwareSerial(BLUEFRUIT_SWUART_TXD_PIN, BLUEFRUIT_SWUART_RXD_PIN);
-
-Adafruit_BluefruitLE_UART ble(bluefruitSS, BLUEFRUIT_UART_MODE_PIN,
-                              BLUEFRUIT_UART_CTS_PIN, BLUEFRUIT_UART_RTS_PIN);
-#define FACTORYRESET_ENABLE 1
-void handleCommand(String command);
+int8_t pins[8] = { RX, TX, MISO, 13, 5, SDA, A4, A3 };
+Adafruit_NeoPXL8 leds(NUM_LEDS, pins, COLOR_ORDER);
 
 void setup() {
-  LEDSetup();
-
-  while (!Serial)
-    ;  // Required for Flora & Micro
-  delay(2000);
-
-  Serial.begin(115200);
-  Serial.println(F("Adafruit Bluefruit AT Command Example"));
-  Serial.println(F("-------------------------------------"));
-
-  /* Initialise the module */
-  Serial.print(F("Initialising the Bluefruit LE module: "));
-
-  if (!ble.begin(VERBOSE_MODE)) {
-    error(F("Couldn't find Bluefruit, make sure it's in CoMmanD mode & check wiring?"));
-  }
-  Serial.println(F("OK!"));
-
-  if (FACTORYRESET_ENABLE) {
-    /* Perform a factory reset to make sure everything is in a known state */
-    Serial.println(F("Performing a factory reset: "));
-    if (!ble.factoryReset()) {
-      error(F("Couldn't factory reset"));
-    }
+  if (!leds.begin()) {
+    pinMode(LED_BUILTIN, OUTPUT);
+    for (;;) digitalWrite(LED_BUILTIN, (millis() / 500) & 1);
   }
 
-  /* Disable command echo from Bluefruit */
-  ble.echo(false);
-  ble.setMode(BLUEFRUIT_MODE_DATA);
+  leds.setBrightness(100);  // Tone it down, NeoPixels are BRIGHT!
+  for (uint32_t color = 0xFF0000; color > 0; color >>= 8) {
+    leds.fill(color);
+    leds.show();
+    delay(500);
+  }
 
-  Serial.println("Requesting Bluefruit info:");
-  /* Print Bluefruit information */
-  ble.info();
+  leds.fill(0);
+}
+
+StripCount getCount(StripInformation* strip) {
+  if(strip->index == -1) return StripCount(0,0);
+  return StripCount(strip->index * NUM_LEDS, strip->index * NUM_LEDS + strip->count);
+}
+
+void doEarControl(Adafruit_NeoPXL8* leds, uint32_t now) {
+  StripCount ear_counts = getCount(&EARS);
+  StripCount left_ear_count = StripCount(ear_counts.startIndex, ear_counts.startIndex + ((ear_counts.endIndex - ear_counts.startIndex) / 2) - 1);
+  StripCount right_ear_count = StripCount(ear_counts.startIndex + ((ear_counts.endIndex - ear_counts.startIndex) / 2), ear_counts.endIndex);
+
+  rainbowPattern(leds, &left_ear_count, &EARS, now, true);
+  rainbowPattern(leds, &right_ear_count, &EARS, now, false);
+
+  StripCount ear_counts_left = getCount(&EARS_LEFT);
+  StripCount ear_counts_right = getCount(&EARS_RIGHT);
+
+  rainbowPattern(leds, &ear_counts_left, &EARS_LEFT, now, true);
+  rainbowPattern(leds, &ear_counts_right, &EARS_RIGHT, now, true);
 }
 
 void loop() {
-  BLELoop();
-  LEDLoop();
-}
+  uint32_t now = millis();  // Get time once at start of each frame
+  uint32_t testColor = leds.Color(leds.gamma8(255), leds.gamma8(0), leds.gamma8(0));
 
-void BLELoop() {
-  String line = "";
+  StripCount eye_left_counts = getCount(&EYE_LEFT);
+  rainbowPattern(&leds, &eye_left_counts, &EYE_LEFT, now, true);
 
-  if (ble.available()) {
-    while (ble.available()) {
-      char c = (char)ble.read();
-      if (c == '\n') {
-        Serial.println(line);
-        handleCommand(line);  // Pass the received line to a command handler function
-        line = "";
-      } else {
-        line += c;
-      }
-    }
-  }
-}
+  StripCount eye_right_counts = getCount(&EYE_RIGHT);
+  rainbowPattern(&leds, &eye_right_counts, &EYE_RIGHT, now, false);
 
-void handleCommand(String command) {
-  // Split the command string into parts based on the comma delimiter
-  int delimiterIndex1 = command.indexOf(',');
-  int delimiterIndex2 = command.indexOf(',', delimiterIndex1 + 1);
-  int delimiterIndex3 = command.indexOf(',', delimiterIndex2 + 1);
-  int delimiterIndex4 = command.indexOf(',', delimiterIndex3 + 1);
-  int spaceIndex1 = command.indexOf(' ', delimiterIndex4 + 1);
-  int spaceIndex2 = command.lastIndexOf(' ');
+  StripCount jaw_up_counts = getCount(&JAW_UP);
+  rainbowPattern(&leds, &jaw_up_counts, &JAW_UP, now, true);
 
-  // Ensure all delimiters were found
-  if (delimiterIndex1 > 0 && delimiterIndex2 > delimiterIndex1 && delimiterIndex3 > delimiterIndex2 
-      && delimiterIndex4 > delimiterIndex3 && spaceIndex1 > delimiterIndex4 && spaceIndex2 > spaceIndex1) {
-    String strip = command.substring(0, delimiterIndex1);
-    String pattern = command.substring(delimiterIndex1 + 1, delimiterIndex2);
-    String speed = command.substring(delimiterIndex2 + 1, delimiterIndex3);
-    String brightness = command.substring(delimiterIndex3 + 1, delimiterIndex4);
-    String redStr = command.substring(delimiterIndex4 + 1, spaceIndex1);
-    String greenStr = command.substring(spaceIndex1 + 1, spaceIndex2);
-    String blueStr = command.substring(spaceIndex2 + 1);
+  StripCount jaw_low_counts = getCount(&JAW_LOW);
+  rainbowPattern(&leds, &jaw_low_counts, &JAW_LOW, now, true);
 
-    // Convert the pattern, speed, brightness, red, green, and blue strings to integer values
-    int patternValue = pattern.toInt();
-    int speedValue = speed.toInt();
-    int brightnessValue = brightness.toInt();
-    int redValue = redStr.toInt();
-    int greenValue = greenStr.toInt();
-    int blueValue = blueStr.toInt();
+  uint32_t cheek_color = leds.Color(leds.gamma8(255), leds.gamma8(0), leds.gamma8(255));
+  StripCount cheek_right_counts = getCount(&CHEEK_RIGHT);
+  if(CHEEK_RIGHT.count != 0) leds.fill(cheek_color, cheek_right_counts.startIndex, CHEEK_RIGHT.count);
 
-    
-  }
-  else {
-    Serial.println("Invalid command format");
-  }
-}
+  StripCount cheek_left_counts = getCount(&CHEEK_LEFT);
+  if(CHEEK_LEFT.count != 0) leds.fill(cheek_color, cheek_left_counts.startIndex, CHEEK_LEFT.count);
 
+  doEarControl(&leds, now);
 
-
-
-void error(const __FlashStringHelper* err) {
-  Serial.println(err);
-  while (1)
-    ;
+  leds.show();
 }
