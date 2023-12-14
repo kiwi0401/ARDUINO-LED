@@ -44,6 +44,7 @@ extern StripInformation EARS_RIGHT;
 
 enum Pattern {Rainbow = 0, Off = 1, Hypno = 2, PinkPurple = 3, Explosive = 4, BoringAltyBlue = 5, TrailingExplosive = 6, Raindrop = 7, Chasing = 8}; 
 
+int Wrap(int kX, int const kLowerBound, int const kUpperBound);
 
 void LEDSetup();
 void LEDLoop();

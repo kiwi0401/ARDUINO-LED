@@ -1,9 +1,17 @@
 #include <Adafruit_NeoPXL8.h>
 #include "LEDControl.h"
 #include "RainbowPattern.h"
+#include "Explosive.h"
 
 int8_t pins[8] = { RX, TX, MISO, 13, 5, SDA, A4, A3 };
 Adafruit_NeoPXL8 leds(NUM_LEDS, pins, COLOR_ORDER);
+LedStrip earLeft = LedStrip();
+LedStrip earRight = LedStrip();
+LedStrip eyeLeft = LedStrip(120);
+LedStrip eyeRight = LedStrip(120);
+LedStrip mouthUp = LedStrip();
+LedStrip mouthLow = LedStrip();
+
 
 void setup() {
   if (!leds.begin()) {
@@ -28,11 +36,14 @@ StripCount getCount(StripInformation* strip) {
 
 void doEarControl(Adafruit_NeoPXL8* leds, uint32_t now) {
   StripCount ear_counts = getCount(&EARS);
-  StripCount left_ear_count = StripCount(ear_counts.startIndex, ear_counts.startIndex + ((ear_counts.endIndex - ear_counts.startIndex) / 2) - 1);
-  StripCount right_ear_count = StripCount(ear_counts.startIndex + ((ear_counts.endIndex - ear_counts.startIndex) / 2), ear_counts.endIndex);
+  StripCount left_ear_count = StripCount(ear_counts.startIndex, ear_counts.endIndex - 4);
+  StripCount right_ear_count = StripCount(ear_counts.endIndex - 3, ear_counts.startIndex + 82);
 
   rainbowPattern(leds, &left_ear_count, &EARS, now, true);
   rainbowPattern(leds, &right_ear_count, &EARS, now, false);
+
+  // earLeft.explosivePattern(leds, &left_ear_count, &EARS, now, false);
+  // earRight.explosivePattern(leds, &right_ear_count, &EARS, now, false);
 
   StripCount ear_counts_left = getCount(&EARS_LEFT);
   StripCount ear_counts_right = getCount(&EARS_RIGHT);
@@ -46,16 +57,22 @@ void loop() {
   uint32_t testColor = leds.Color(leds.gamma8(255), leds.gamma8(0), leds.gamma8(0));
 
   StripCount eye_left_counts = getCount(&EYE_LEFT);
-  rainbowPattern(&leds, &eye_left_counts, &EYE_LEFT, now, true);
+  // rainbowPattern(&leds, &eye_left_counts, &EYE_LEFT, now, true);
 
   StripCount eye_right_counts = getCount(&EYE_RIGHT);
-  rainbowPattern(&leds, &eye_right_counts, &EYE_RIGHT, now, false);
+  // rainbowPattern(&leds, &eye_right_counts, &EYE_RIGHT, now, false);
+
+  eyeLeft.explosivePattern(&leds, &eye_left_counts, &EYE_LEFT, now, false);
+  eyeRight.explosivePattern(&leds, &eye_right_counts, &EYE_RIGHT, now, true);
 
   StripCount jaw_up_counts = getCount(&JAW_UP);
-  rainbowPattern(&leds, &jaw_up_counts, &JAW_UP, now, true);
+  // rainbowPattern(&leds, &jaw_up_counts, &JAW_UP, now, true);
 
   StripCount jaw_low_counts = getCount(&JAW_LOW);
-  rainbowPattern(&leds, &jaw_low_counts, &JAW_LOW, now, true);
+  // rainbowPattern(&leds, &jaw_low_counts, &JAW_LOW, now, true);
+
+  mouthUp.explosivePattern(&leds, &jaw_up_counts, &JAW_UP, now, false);
+  mouthLow.explosivePattern(&leds, &jaw_low_counts, &JAW_LOW, now, false);
 
   uint32_t cheek_color = leds.Color(leds.gamma8(255), leds.gamma8(0), leds.gamma8(255));
   StripCount cheek_right_counts = getCount(&CHEEK_RIGHT);

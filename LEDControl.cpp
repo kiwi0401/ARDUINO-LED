@@ -7,7 +7,7 @@
 // StripInformation JAW_LOW = StripInformation(33, 1000, 4);
 // StripInformation CHEEK_RIGHT = StripInformation(15, 1000, 5);
 // StripInformation CHEEK_LEFT = StripInformation(15, 1000, 6);
-// StripInformation EARS = StripInformation(82, 1000, 2);
+// StripInformation EARS = StripInformation(41, 1000, 2);
 // StripInformation EARS_LEFT = StripInformation(0, 1000, -1);
 // StripInformation EARS_RIGHT = StripInformation(0, 1000, -1);
 
@@ -27,4 +27,14 @@ StripInformation EARS = StripInformation(0, 1000, -1);
 
 void LEDLoop() {
   
+}
+
+int Wrap(int kX, int const kLowerBound, int const kUpperBound)
+{
+    int range_size = kUpperBound - kLowerBound + 1;
+
+    if (kX < kLowerBound)
+        kX += range_size * ((kLowerBound - kX) / range_size + 1);
+
+    return kLowerBound + (kX - kLowerBound) % range_size;
 }

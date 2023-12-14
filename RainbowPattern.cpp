@@ -1,16 +1,5 @@
 #include "RainbowPattern.h"
 
-
-int Wrap(int kX, int const kLowerBound, int const kUpperBound)
-{
-    int range_size = kUpperBound - kLowerBound + 1;
-
-    if (kX < kLowerBound)
-        kX += range_size * ((kLowerBound - kX) / range_size + 1);
-
-    return kLowerBound + (kX - kLowerBound) % range_size;
-}
-
 void rainbowPattern(Adafruit_NeoPXL8* leds, StripCount* stripCount, StripInformation* stripInformation, uint32_t millis, bool reversed) {
     if(stripInformation->count == 0) return;
     double speedMultiplier = double((millis % stripInformation->speed)) / double(stripInformation->speed);
