@@ -9,6 +9,7 @@
 #define COLOR_ORDER NEO_GRB
 
 #define BRIGHTNESS 100
+#define PASSWORD "YIPPEE"
 
 struct Color {
   int red;
@@ -20,10 +21,13 @@ struct StripInformation {
   int count;
   int speed;
   int index;
+  int brightness;
   StripInformation()
-    : count(0), speed(0), index(0) {}
+    : count(0), speed(0), index(0), brightness(0) {}
   StripInformation(int count, int speed, int index)
-    : count(count), speed(speed), index(index) {}
+    : count(count), speed(speed), index(index), brightness(255) {}
+  StripInformation(int count, int speed, int index, int brightness)
+    : count(count), speed(speed), index(index), brightness(brightness) {}
 };
 
 struct StripCount {
@@ -47,6 +51,24 @@ enum Pattern {Rainbow = 0, Off = 1, Hypno = 2, PinkPurple = 3, Explosive = 4, Bo
 int Wrap(int kX, int const kLowerBound, int const kUpperBound);
 
 void LEDSetup();
-void LEDLoop();
+
+class LedController {
+public:
+  Pattern pattern;
+  int brightness;
+  int speed;
+  StripInformation *stripInformation;
+  StripCount *stripCounts;
+  Adafruit_NeoPXL8* leds;
+  int numStrips;
+  // Constructor
+  //One Strip
+  LedController(StripInformation stripInformation, StripCount stripCounts, Adafruit_NeoPXL8* leds);
+  //Multiple Strips
+  LedController(StripInformation *stripInformation, StripCount *stripCounts, Adafruit_NeoPXL8* leds, int numStrips);
+  void runPattern();
+};
+
+
 
 #endif

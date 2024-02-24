@@ -15,7 +15,7 @@ void rainbowPattern(Adafruit_NeoPXL8* leds, StripCount* stripCount, StripInforma
           patternNdex = Wrap(int((65536 * speedMultiplier) + (-actualI * 65536.0 / actualCount)), 0, 65536);
         }
 
-        uint32_t rgbcolor = leds->gamma32(leds->ColorHSV(patternNdex));
+        uint32_t rgbcolor = leds->gamma32(leds->ColorHSV(patternNdex, 255, stripInformation->brightness));
         leds->setPixelColor(i, rgbcolor);
     }
 }
