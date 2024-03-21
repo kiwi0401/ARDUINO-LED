@@ -186,7 +186,7 @@ void handleCommand(String command) {
     }
     values[i] = segment;  // Last value
 
-    if(i <= 1) return;
+    if(i <= 0) return;
 
     LedController* controller = getControllerFromString(values[0]);
     Pattern p = getPatternFromString(values[1]);
